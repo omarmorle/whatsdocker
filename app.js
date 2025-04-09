@@ -19,10 +19,11 @@ client.on('ready', () => {
 });
 
 client.on('message', async (msg) => {
-    const content = msg.body.toLowerCase();
+    const raw = msg.body;
+    const content = raw;
 
     // Etiquetar a todos si se escribe "@todos"
-    if (content === '@todos') {
+    if (msg.body.toLowerCase() === '@todos') {
         const chat = await msg.getChat();
         if (chat.isGroup) {
             let text = '';
@@ -42,34 +43,39 @@ client.on('message', async (msg) => {
     }
 
     // Mostrar menú secreto
-    if (content === 'minipc') {
+    if (msg.body.toLowerCase() === 'minipc') {
         msg.reply(`🛠️ *Menú de Comandos MiniPC* 🛠️
 1️⃣ start <nombre_contenedor> - Iniciar un contenedor
 2️⃣ stop <nombre_contenedor> - Detener un contenedor
 3️⃣ status - Ver el estado de todos los contenedores
-4️⃣ ipMinecraft - Obtener la IP del servidor de Minecraft
-5️⃣ consolaMinecraft - Ver la consola del servidor de Minecraft
-6️⃣ enviarMinecraft <comando> - Enviar un comando a la consola de Minecraft
-7️⃣ ssh <comando> - Ejecutar un comando en el sistema
+4️⃣ ssh <comando> - Ejecutar un comando en el sistema
 
 ¡Dime qué comando deseas ejecutar!`);
         return;
     }
 
     // Comando para obtener el estado de los contenedores
-    if (content === 'status') {
-        exec("docker ps -a", (error, stdout, stderr) => {
+    if (msg.body.toLowerCase() === 'status') {
+        exec("docker ps -a --format '{{.Names}}\t{{.Status}}\t{{.Image}}'", (error, stdout, stderr) => {
             if (error) {
                 msg.reply(`❌ Error al obtener el estado de los contenedores: ${stderr}`);
                 return;
             }
-            msg.reply(`📊 Estado de contenedores:\n${stdout}`);
+    
+            const lines = stdout.trim().split('\n');
+            let formatted = '*📦 Contenedores Docker:*\n\n';
+            lines.forEach(line => {
+                const [name, status, image] = line.split('\t');
+                formatted += `*🟢 ${name}*\nEstado: ${status}\nImagen: ${image}\n\n`;
+            });
+    
+            msg.reply(formatted.trim());
         });
         return;
     }
 
     // Comando para iniciar contenedores
-    if (content.startsWith('start ')) {
+    if (msg.body.toLowerCase().startsWith('start ')) {
         const container = content.replace('start ', '').trim();
         exec(`docker start ${container}`, (error, stdout, stderr) => {
             if (error) {
@@ -82,7 +88,7 @@ client.on('message', async (msg) => {
     }
 
     // Comando para detener contenedores
-    if (content.startsWith('stop ')) {
+    if (msg.body.toLowerCase().startsWith('stop ')) {
         const container = content.replace('stop ', '').trim();
         exec(`docker stop ${container}`, (error, stdout, stderr) => {
             if (error) {
@@ -94,41 +100,8 @@ client.on('message', async (msg) => {
         return;
     }
 
-    // Comando para obtener la IP del servidor de Minecraft
-    if (content === 'ipminecraft') {
-        exec("docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' mc-server", (error, stdout, stderr) => {
-            if (error) {
-                msg.reply(`❌ Error al obtener la IP del servidor de Minecraft: ${stderr}`);
-                return;
-            }
-            msg.reply(`🌐 IP del servidor de Minecraft: ${stdout.trim()}`);
-        });
-        return;
-    }
-
-    // Comando para ver la consola del servidor de Minecraft
-    if (content === 'consolaminecraft') {
-        msg.reply(`Para ver la consola ejecuta este comando en tu sistema:
-\`docker attach mc-server\`
-(O puedes usar screen o logs si lo tienes configurado así)`);
-        return;
-    }
-
-    // Comando para enviar comandos a la consola de Minecraft
-    if (content.startsWith('enviarminecraft ')) {
-        const command = content.replace('enviarminecraft ', '').trim();
-        exec(`docker exec mc-server ${command}`, (error, stdout, stderr) => {
-            if (error) {
-                msg.reply(`❌ Error al enviar el comando a la consola: ${stderr}`);
-                return;
-            }
-            msg.reply(`✅ Comando enviado a Minecraft: ${stdout}`);
-        });
-        return;
-    }
-
     // Comando para ejecutar comandos del sistema
-    if (content.startsWith('ssh ')) {
+    if (msg.body.startsWith('ssh ')) {
         const command = content.replace('ssh ', '').trim();
         exec(command, (error, stdout, stderr) => {
             if (error) {
@@ -139,6 +112,7 @@ client.on('message', async (msg) => {
         });
         return;
     }
+    
 
     // Comando para transcribir audios
     if (msg.hasMedia && (msg.type === 'ptt' || msg.type === 'audio')) {
