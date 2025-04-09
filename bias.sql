@@ -1,0 +1,9 @@
+CREATE DATABASE IF NOT EXISTS bias_db;
+USE bias_db;
+
+CREATE TABLE IF NOT EXISTS bias (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    grupo VARCHAR(100),
+    idol VARCHAR(100),
+    coreano VARCHAR(100)
+);

@@ -1,0 +1,15 @@
+version: '3.8'
+services:
+  whatsapp-bot:
+    build: .
+    container_name: whatsapp-bot
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: always
+    healthcheck:
+      test: ["CMD", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
