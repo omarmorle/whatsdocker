@@ -127,7 +127,7 @@ client.on('message', async (msg) => {
         console.log(`Archivo de audio guardado: ${audioPath}`);
 
         // Ejecutar Whisper para transcribir el audio
-        const whisperCommand = `whisper ${audioPath} --model medium --language es --output_format txt --fp16 False`;
+        const whisperCommand = `whisper ${audioPath} --model base --language es --output_format txt --fp16 False`;
         exec(whisperCommand, (error, stdout, stderr) => {
             if (error) {
                 console.error(`Error al ejecutar Whisper: ${stderr}`);
