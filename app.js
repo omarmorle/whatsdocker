@@ -2,7 +2,7 @@
 // Módulos requeridos
 // ─────────────────────────────────────────────────────────────
 const puppeteer = require('puppeteer'); // Navegador sin cabeza para iniciar sesión en WhatsApp Web
-const { Client } = require('whatsapp-web.js'); // Cliente de WhatsApp Web
+const { Client, Poll } = require('whatsapp-web.js'); // Cliente de WhatsApp Web
 const qrcode = require('qrcode-terminal'); // Genera código QR en la terminal
 const fs = require('fs'); // Lectura y escritura de archivos
 const { exec } = require('child_process'); // Ejecuta comandos del sistema
@@ -121,6 +121,30 @@ client.on('message', async (msg) => {
         return;
     }
 
+    // ───── Comando crear encuesta ─────
+    if (msg.body.toLowerCase().startsWith('crear encuesta ')) {
+        const partes = msg.body.substring(15).split(',');
+        if (partes.length < 2) {
+            msg.reply('❗ Formato inválido. Usa: crear encuesta pregunta, opción1, opción2...');
+            return;
+        }
+    
+        const pregunta = partes[0].trim();
+        const opciones = partes.slice(1).map(op => op.trim()).filter(op => op.length > 0);
+    
+        if (opciones.length < 2) {
+            msg.reply('❗ Necesitas al menos dos opciones para crear una encuesta.');
+            return;
+        }
+    
+        try {
+            await msg.reply(new Poll(pregunta, opciones));
+        } catch (err) {
+            console.error('❌ Error al crear encuesta:', err);
+            msg.reply('❌ Hubo un error al crear la encuesta.');
+        }
+        return;
+    }    
 
     // ─────────────────────────────────────────────────────────────
     // Respuestas personalizadas para ciertos comandos del sistema
