@@ -224,6 +224,24 @@ client.on('message', async (msg) => {
         return;
     }
 
+    // ───── Comando elige random ─────
+    if (msg.body.toLowerCase() === 'elige random') {
+        const chat = await msg.getChat();
+        if (chat.isGroup) {
+            const participantes = chat.participants;
+            const randomIndex = Math.floor(Math.random() * participantes.length);
+            const randomParticipant = participantes[randomIndex];
+            const contact = await client.getContactById(randomParticipant.id._serialized);
+
+            chat.sendMessage(`🎲 ¡Hoy le toca a @${contact.number}!`, {
+                mentions: [contact]
+            });
+        } else {
+            msg.reply('Este comando solo funciona en grupos.');
+        }
+        return;
+    }
+
 
     // ───── Transcripción de notas de voz con Whisper ─────
     if (msg.hasMedia && (msg.type === 'ptt' || msg.type === 'audio')) {
