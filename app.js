@@ -436,7 +436,7 @@ client.on('message', async (msg) => {
         return;
     }
 
-    // ───── Huevos vayanse a la verga ─────
+    // ──── Huevos vayanse a la verga ────
     if (body === ('huevos')) {
         msg.reply('Vayanse a la verga');
         return;
