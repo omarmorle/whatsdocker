@@ -72,10 +72,13 @@ function processQueue() {
 client.on('message', async (msg) => {
     const raw = msg.body;
     const content = raw;
+    const body = msg.body.toLowerCase();
 
     // ───── Comando @todos ─────
     // Menciona a todos los miembros de un grupo
-    if (msg.body.toLowerCase() === '@todos') {
+    const todos = '@todos';
+    const everyone = '@everyone';
+    if (body.includes(todos) || body.includes(everyone)) {
         const chat = await msg.getChat();
         if (chat.isGroup) {
             let text = '';
@@ -96,7 +99,7 @@ client.on('message', async (msg) => {
 
     // ───── Comando minipc ─────
     // Muestra el menú de comandos disponibles para gestión del sistema
-    if (msg.body.toLowerCase() === 'minipc') {
+    if (body === 'minipc') {
         msg.reply(`🛠️ *Menú de Comandos MiniPC* 🛠️
 
 1️⃣ start <nombre_contenedor> - Iniciar un contenedor
@@ -118,7 +121,7 @@ client.on('message', async (msg) => {
     }
     // ───── Comando status ─────
     // Muestra el estado de los contenedores Docker
-    if (msg.body.toLowerCase() === 'status') {
+    if (body === 'status') {
         exec("docker ps -a --format '{{.Names}}\t{{.Status}}\t{{.Image}}'", (error, stdout, stderr) => {
             if (error) {
                 msg.reply(`❌ Error al obtener el estado de los contenedores: ${stderr}`);
@@ -139,7 +142,7 @@ client.on('message', async (msg) => {
 
     // ───── Comando start ─────
     // Inicia un contenedor Docker por nombre
-    if (msg.body.toLowerCase().startsWith('start ')) {
+    if (body.startsWith('start ')) {
         const container = content.replace('start ', '').trim();
         exec(`docker start ${container}`, (error, stdout, stderr) => {
             if (error) {
@@ -153,7 +156,7 @@ client.on('message', async (msg) => {
 
     // ───── Comando stop ─────
     // Detiene un contenedor Docker por nombre
-    if (msg.body.toLowerCase().startsWith('stop ')) {
+    if (body.startsWith('stop ')) {
         const container = content.replace('stop ', '').trim();
         exec(`docker stop ${container}`, (error, stdout, stderr) => {
             if (error) {
@@ -166,7 +169,7 @@ client.on('message', async (msg) => {
     }
 
     // ───── Comando crear encuesta ─────
-    if (msg.body.toLowerCase().startsWith('crear encuesta ')) {
+    if (body.startsWith('crear encuesta ')) {
         const partes = msg.body.substring(15).split(',');
         if (partes.length < 2) {
             msg.reply('❗ Formato inválido. Usa: crear encuesta pregunta, opción1, opción2...');
@@ -293,7 +296,7 @@ client.on('message', async (msg) => {
     }
 
     // ───── Comando elige random ─────
-    if (msg.body.toLowerCase() === 'elige random') {
+    if (body === 'elige random') {
         const chat = await msg.getChat();
         if (chat.isGroup) {
             const participantes = chat.participants;
@@ -393,7 +396,7 @@ client.on('message', async (msg) => {
     }
 
     // ───── Comando tira sql ─────
-    if (msg.body.toLowerCase().startsWith('tira sql ')) {
+    if (body.startsWith('tira sql ')) {
         const query = msg.body.substring(9).trim();
       
         try {
@@ -430,6 +433,12 @@ client.on('message', async (msg) => {
         transcriptionQueue.push({ audioPath, transcriptPath, msg });
     
         processQueue();
+        return;
+    }
+
+    // ──── Huevos vayanse a la verga ────
+    if (body === ('huevos')) {
+        msg.reply('Vayanse a la verga');
         return;
     }
 
