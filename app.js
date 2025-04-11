@@ -441,6 +441,7 @@ client.on('message', async (msg) => {
         msg.reply('Vayanse a la verga');
         return;
     }
+
 });
 
 // Inicializa el cliente de WhatsApp Web

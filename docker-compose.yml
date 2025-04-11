@@ -8,8 +8,32 @@ services:
       - /app/node_modules
       - /var/run/docker.sock:/var/run/docker.sock
     restart: always
+    depends_on:
+      - db
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_NAME=bias_db
     healthcheck:
       test: ["CMD", "ping", "-h", "localhost"]
       interval: 10s
       timeout: 5s
       retries: 5
+
+  db:
+    image: postgres:15
+    container_name: postgres-bias
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: bias_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      - ./bias.sql:/docker-entrypoint-initdb.d/bias.sql
+
+volumes:
+  db-data:
