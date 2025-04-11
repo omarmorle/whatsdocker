@@ -310,85 +310,64 @@ client.on('message', async (msg) => {
         return;
     }
 
-    // ───── Comando guardar bias ─────
-    if (msg.body.toLowerCase().startsWith('guardar bias ')) {
-        const partes = msg.body.substring(13).split(',');
-        if (partes.length < 3) {
-            msg.reply('❌ Formato inválido. Usa: guardar bias <idol>, <grupo>, <coreano>');
-            return;
-        }
-      
-        const [idol, grupo, coreano] = partes.map(p => p.trim());
-      
+    // ───── BIAS ─────
+    const miBiasRegex = /^mi bias de (.+)$/i;
+    const biasDeRegex = /^bias de (.+) de (.+)$/i;
+
+    const miBiasMatch = raw.match(miBiasRegex);
+    const biasDeMatch = raw.match(biasDeRegex);
+
+    if (miBiasMatch) {
+        const grupo = miBiasMatch[1].trim();
+        const telefono = msg.from.replace(/[^0-9]/g, '');
+
         try {
-            await db.query(
-                'INSERT INTO bias (idol, grupo, coreano) VALUES ($1, $2, $3)',
-                [idol, grupo, coreano]
+            const result = await db.query(
+                `SELECT b.idol, b.imagen_path FROM usuarios_bias ub
+                 JOIN bias b ON ub.bias_id = b.id
+                 WHERE ub.telefono = $1 AND LOWER(ub.grupo) = LOWER($2)`,
+                [telefono, grupo]
             );
-            msg.reply(`✅ Bias guardado:\nIdol: *${idol}*\nGrupo: *${grupo}*\nCoreano: *${coreano}*`);
-        } catch (err) {
-            console.error(err);
-            msg.reply('❌ Error al guardar el bias.');
-        }
-      
-        return;
-    }
 
-    // ───── Comando eliminar bias ─────
-    if (msg.body.toLowerCase().startsWith('eliminar bias ')) {
-        const idol = msg.body.substring(14).trim();
-      
-        try {
-            const result = await db.query('DELETE FROM bias WHERE LOWER(idol) = LOWER($1)', [idol]);
-            if (result.rowCount === 0) {
-                msg.reply(`⚠️ No se encontró ningún bias con el nombre "${idol}".`);
+            if (result.rows.length > 0) {
+                const { idol, imagen_path } = result.rows[0];
+                await msg.reply(`Tu bias de ${grupo} es *${idol}*`, msg.from);
+                await client.sendMessage(msg.from, fs.readFileSync(imagen_path), { sendMediaAsSticker: false });
             } else {
-                msg.reply(`🗑️ Bias "${idol}" eliminado correctamente.`);
+                msg.reply(`No encontré tu bias de ${grupo}.`);
             }
         } catch (err) {
-            console.error(err);
-            msg.reply('❌ Error al eliminar el bias.');
+            console.error('Error al consultar bias:', err);
+            msg.reply(`❌ Error al buscar tu bias: ${JSON.stringify(err)}`);
         }
-      
+
         return;
     }
 
-    // ───── Comando ver bias ─────
-    if (msg.body.toLowerCase().startsWith('ver bias')) {
-        const input = msg.body.trim();
-      
+    if (biasDeMatch) {
+        const nombre = biasDeMatch[1].trim();
+        const grupo = biasDeMatch[2].trim();
+
         try {
-            // Ver todos
-            if (input.toLowerCase() === 'ver bias') {
-                const res = await db.query('SELECT * FROM bias ORDER BY id DESC');
-                if (res.rows.length === 0) {
-                    msg.reply('📭 No hay bias guardados.');
-                    return;
-                }
-                const lista = res.rows.map(b => `⭐ *${b.idol}* (${b.grupo}) - ${b.coreano}`).join('\n');
-                msg.reply(`📋 Lista de todos los bias:\n\n${lista}`);
-                return;
+            const result = await db.query(
+                `SELECT b.idol, b.imagen_path FROM usuarios_bias ub
+                 JOIN bias b ON ub.bias_id = b.id
+                 WHERE LOWER(ub.usuario) = LOWER($1) AND LOWER(ub.grupo) = LOWER($2)`,
+                [nombre, grupo]
+            );
+
+            if (result.rows.length > 0) {
+                const { idol, imagen_path } = result.rows[0];
+                await msg.reply(`El bias de ${nombre} en ${grupo} es *${idol}*`, msg.from);
+                await client.sendMessage(msg.from, fs.readFileSync(imagen_path), { sendMediaAsSticker: false });
+            } else {
+                msg.reply(`No encontré el bias de ${nombre} en ${grupo}.`);
             }
-      
-          // Ver por idol
-          const idol = input.substring(9).trim();
-          const res = await db.query(
-            'SELECT * FROM bias WHERE LOWER(idol) = LOWER($1) ORDER BY id DESC',
-            [idol]
-          );
-      
-          if (res.rows.length === 0) {
-            msg.reply(`📭 No se encontró ningún bias con el nombre "${idol}".`);
-            return;
-          }
-      
-          const lista = res.rows.map(b => `⭐ *${b.idol}* (${b.grupo}) - ${b.coreano}`).join('\n');
-          msg.reply(`📋 Resultado para *${idol}*:\n\n${lista}`);
         } catch (err) {
-          console.error(err);
-          msg.reply('❌ Error al consultar los bias.');
+            console.error('Error al consultar bias de otro usuario:', err);
+            msg.reply('❌ Hubo un error al buscar el bias.');
         }
-      
+
         return;
     }
 
