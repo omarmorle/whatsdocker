@@ -319,7 +319,9 @@ client.on('message', async (msg) => {
 
     if (miBiasMatch) {
         const grupo = miBiasMatch[1].trim();
-        const telefono = msg.from.replace(/[^0-9]/g, '');
+        const telefono = msg.author
+            ? msg.author.replace(/[^0-9]/g, '')
+            : msg.from.replace(/[^0-9]/g, '');
 
         try {
             const result = await db.query(
