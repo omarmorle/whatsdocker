@@ -7,6 +7,7 @@ const qrcode = require('qrcode-terminal'); // Genera código QR en la terminal
 const fs = require('fs'); // Lectura y escritura de archivos
 const { exec } = require('child_process'); // Ejecuta comandos del sistema
 const db = require('./db'); // Importa la configuración de la base de datos
+const { MessageMedia } = require('whatsapp-web.js'); // Manejo de archivos de WhatsApp
 
 //Variables para el encolamiento de audios
 const transcriptionQueue = [];
@@ -334,7 +335,8 @@ client.on('message', async (msg) => {
             if (result.rows.length > 0) {
                 const { idol, imagen_path } = result.rows[0];
                 await msg.reply(`Tu bias de ${grupo} es *${idol}*`, msg.from);
-                await client.sendMessage(msg.from, fs.readFileSync(imagen_path), { sendMediaAsSticker: false });
+                const media = MessageMedia.fromFilePath(imagen_path);
+                await client.sendMessage(msg.from, media);
             } else {
                 msg.reply(`No encontré tu bias de ${grupo}.`);
             }
@@ -361,7 +363,8 @@ client.on('message', async (msg) => {
             if (result.rows.length > 0) {
                 const { idol, imagen_path } = result.rows[0];
                 await msg.reply(`El bias de ${nombre} en ${grupo} es *${idol}*`, msg.from);
-                await client.sendMessage(msg.from, fs.readFileSync(imagen_path), { sendMediaAsSticker: false });
+                const media = MessageMedia.fromFilePath(imagen_path);
+                await client.sendMessage(msg.from, media);
             } else {
                 msg.reply(`No encontré el bias de ${nombre} en ${grupo}.`);
             }
