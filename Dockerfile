@@ -59,6 +59,8 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install
 RUN npm i whatsapp-web.js
+RUN npm install pg
+
 
 # Copiar el resto de los archivos
 COPY . .
