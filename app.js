@@ -41,7 +41,7 @@ function processQueue() {
     isProcessing = true;
     const { audioPath, transcriptPath, msg } = transcriptionQueue.shift();
 
-    const whisperCommand = `whisper ${audioPath} --model base --language es --output_format txt --fp16 False`;
+    const whisperCommand = `python3 whisper.py ${audioPath}`;
 
     exec(whisperCommand, (error, stdout, stderr) => {
         if (error) {
@@ -109,12 +109,8 @@ client.on('message', async (msg) => {
 4️⃣ ssh <comando> - Ejecutar un comando en el sistema
 5️⃣ crear encuesta <pregunta>, <opción1>, <opción2>, ... - Crear una encuesta
 6️⃣ elige random - Menciona a un miembro aleatorio del grupo
-7️⃣ guardar bias <idol>, <grupo>, <coreano> - Guardar un nuevo bias
-8️⃣ eliminar bias <idol> - Eliminar un bias existente
-9️⃣ ver bias - Muestra todos los registros de bias
-🔟 ver bias <bias> - Muestra el bias con el nombre especificado
-1️⃣1️⃣ @todos - Menciona a todos los miembros del grupo
-1️⃣2️⃣ tira sql <consulta> - Ejecuta una consulta SQL directamente en la base de datos
+7️⃣ @todos - Menciona a todos los miembros del grupo
+8️⃣ tira sql <consulta> - Ejecuta una consulta SQL directamente en la base de datos
 🛠️ Work In Progress - WIP
 
 ¡Dime qué comando deseas ejecutar!`);

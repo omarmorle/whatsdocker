@@ -60,6 +60,8 @@ COPY package*.json ./
 RUN npm install
 RUN npm i whatsapp-web.js
 RUN npm install pg
+RUN pip install git+https://github.com/m-bain/whisperx.git
+RUN apt-get update && apt-get install -y ffmpeg
 
 
 # Copiar el resto de los archivos
