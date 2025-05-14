@@ -12,6 +12,8 @@ const { MessageMedia } = require('whatsapp-web.js'); // Manejo de archivos de Wh
 //Variables para el encolamiento de audios
 const transcriptionQueue = [];
 let isProcessing = false;
+const ttsQueue = [];
+let isProcessingTTS = false;
 
 // ─────────────────────────────────────────────────────────────
 // Configuración e inicialización del cliente de WhatsApp
@@ -63,6 +65,70 @@ function processQueue() {
 
         isProcessing = false;
         processQueue();
+    });
+}
+
+// Procesa el texto a audio
+function processTTSQueue() {
+    if (isProcessingTTS || ttsQueue.length === 0) return;
+
+    isProcessingTTS = true;
+    const { texto, msg } = ttsQueue.shift();
+
+    let velocidad = '1.0';
+    let textoFinal = texto;
+
+    // Si empieza con número, se toma como velocidad
+    if (/^[0-9.]+\s/.test(texto)) {
+        const partes = texto.split(/\s+/);
+        velocidad = partes[0];
+        textoFinal = partes.slice(1).join(' ');
+    }
+
+    const comando = `python3 tts_coqui.py ${velocidad} "${textoFinal.replace(/"/g, '\\"')}"`;
+
+    const { exec } = require('child_process');
+    const { execSync } = require('child_process');
+
+    exec(comando, async (error, stdout, stderr) => {
+        if (error) {
+            console.error('❌ Error TTS:', stderr);
+            try {
+                await msg.reply('❌ No pude generar la voz.');
+            } catch (err) {
+                console.error('❌ No pude notificar error al usuario:', err.message);
+            }
+            isProcessingTTS = false;
+            processTTSQueue();
+            return;
+        }
+
+        try {
+            // Validar velocidad permitida para atempo (entre 0.5 y 2.0)
+            const velocidadFF = Math.max(0.5, Math.min(2.0, parseFloat(velocidad))) || 1.0;
+
+            // Convertir WAV a OGG con cambio de velocidad
+            execSync(`ffmpeg -y -i ./voz.wav -filter:a "atempo=${velocidadFF}" -ar 48000 -ac 1 -c:a libopus ./voz.ogg`);
+
+            const media = MessageMedia.fromFilePath('./voz.ogg');
+
+            try {
+                await client.sendMessage(msg.from, media, { sendAudioAsVoice: true });
+            } catch (sendErr) {
+                console.error('❌ Error al enviar audio (mensaje puede haber sido eliminado):', sendErr.message);
+            }
+
+        } catch (err) {
+            console.error('❌ Error al procesar el archivo de voz:', err);
+            try {
+                await msg.reply('❌ No pude enviar la nota de voz.');
+            } catch (replyErr) {
+                console.error('❌ Error al responder mensaje (posiblemente eliminado):', replyErr.message);
+            }
+        }
+
+        isProcessingTTS = false;
+        processTTSQueue();
     });
 }
 
@@ -134,6 +200,33 @@ client.on('message', async (msg) => {
 
             msg.reply(formatted.trim());
         });
+        return;
+    }
+
+    // ───── Comando status <nombre_contenedor> ─────
+    if (body.startsWith('status ') && body !== 'status') {
+        const nombre = body.replace('status ', '').trim();
+        if (!nombre) {
+            msg.reply('❌ Especifica el nombre del contenedor. Ejemplo:\nstatus boda');
+            return;
+        }
+
+        exec(`docker inspect -f '{{.State.Status}}' ${nombre}`, (error, stdout, stderr) => {
+            if (error) {
+                msg.reply(`❌ No encontré ningún contenedor llamado *${nombre}*`);
+                return;
+            }
+
+            const estado = stdout.trim();
+            let emoji = '⚪️';
+
+            if (estado === 'running') emoji = '🟢';
+            else if (estado === 'exited') emoji = '🔴';
+            else if (estado === 'paused') emoji = '🟡';
+
+            msg.reply(`📦 Estado de *${nombre}*: ${emoji} ${estado}`);
+        });
+
         return;
     }
 
@@ -372,6 +465,19 @@ client.on('message', async (msg) => {
             msg.reply('❌ Hubo un error al buscar el bias.');
         }
 
+        return;
+    }
+
+    // ───── Comando dime para nota de voz ─────
+    if (msg.body.startsWith('!dime ')) {
+        const texto = msg.body.substring(6).trim();
+        if (!texto) {
+            msg.reply('❌ ¿Qué quieres que diga? Usa: !dime tu mensaje');
+            return;
+        }
+    
+        ttsQueue.push({ texto, msg });
+        processTTSQueue();
         return;
     }
 
